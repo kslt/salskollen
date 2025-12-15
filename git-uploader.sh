@@ -1,5 +1,9 @@
 #!/bin/bash
 
+UNDERLINE="\e[4m"
+YELLOW="\e[0;33m"
+RESET="\e[0m"
+
 echo "=============================="
 echo " Git uploader – lugn & enkel uppladdning av uppdateringar till GitHub 😄"
 echo "=============================="
@@ -11,12 +15,13 @@ if [ ! -d ".git" ]; then
   exit 1
 fi
 
-echo "ℹ️  Git status:"
+echo -e "${UNDERLINE}📊 Git status:${RESET}"
 git status
 echo "------------------------------"
 echo
 
-read -p "➡️  Vill du lägga till alla ändringar? (j/n): " ADD
+echo -e "${YELLOW}➡️  Vill du lägga till alla ändringar? (j/n): ${RESET}"
+read ADD
 if [[ "$ADD" =~ ^[Jj]$ ]]; then
   git add .
   echo "✅ Ändringar tillagda."
@@ -26,7 +31,8 @@ fi
 echo "------------------------------"
 echo
 
-read -p "➡️  Vill du skapa en commit? (j/n): " COMMIT
+echo -e "${YELLOW}➡️  Vill du skapa en commit? (j/n): ${RESET}"
+read COMMIT
 if [[ "$COMMIT" =~ ^[Jj]$ ]]; then
   read -p "📝 Commit-meddelande: " MESSAGE
   git commit -m "$MESSAGE"
@@ -36,7 +42,8 @@ fi
 echo "------------------------------"
 echo
 
-read -p "➡️  Vill du pusha till GitHub nu? (j/n): " PUSH
+echo -e "${YELLOW}➡️  Vill du pusha till GitHub nu? (j/n): ${RESET}"
+read PUSH
 if [[ "$PUSH" =~ ^[Jj]$ ]]; then
   git push
 else
@@ -45,7 +52,8 @@ fi
 echo "------------------------------"
 echo
 
-read -p "➡️  Vill du göra git pull (hämta senaste)? (j/n): " PULL
+echo -e "${YELLOW}➡️  Vill du göra git pull (hämta senaste)? (j/n): ${RESET}"
+read PULL
 if [[ "$PULL" =~ ^[Jj]$ ]]; then
   git pull
 else
