@@ -18,9 +18,9 @@ fi
 
 echo -e "${UNDERLINE}📊 Git status:${RESET}"
 git status
-echo "------------------------------"
 echo
 
+echo "------------------------------"
 echo -e "${YELLOW}➡️  Vill du lägga till alla ändringar? (j/n): ${RESET}"
 read ADD
 if [[ "$ADD" =~ ^[Jj]$ ]]; then
@@ -29,9 +29,9 @@ if [[ "$ADD" =~ ^[Jj]$ ]]; then
 else
   echo "⏭️  Hoppar över git add."
 fi
-echo "------------------------------"
 echo
 
+echo "------------------------------"
 echo -e "${YELLOW}➡️  Vill du skapa en commit? (j/n): ${RESET}"
 read COMMIT
 if [[ "$COMMIT" =~ ^[Jj]$ ]]; then
@@ -40,9 +40,9 @@ if [[ "$COMMIT" =~ ^[Jj]$ ]]; then
 else
   echo "⏭️  Ingen commit skapad."
 fi
-echo "------------------------------"
 echo
 
+echo "------------------------------"
 echo -e "${YELLOW}➡️  Vill du pusha till GitHub nu? (j/n): ${RESET}"
 read PUSH
 if [[ "$PUSH" =~ ^[Jj]$ ]]; then
@@ -50,9 +50,9 @@ if [[ "$PUSH" =~ ^[Jj]$ ]]; then
 else
   echo "⏭️  Push hoppades över."
 fi
-echo "------------------------------"
 echo
 
+echo "------------------------------"
 echo -e "${YELLOW}➡️  Vill du göra git pull (hämta senaste)? (j/n): ${RESET}"
 read PULL
 if [[ "$PULL" =~ ^[Jj]$ ]]; then
@@ -60,9 +60,9 @@ if [[ "$PULL" =~ ^[Jj]$ ]]; then
 else
   echo "⏭️  Ingen pull gjord."
 fi
-echo "------------------------------"
 echo
 
+echo "------------------------------"
 echo -e "${GREEN}🎉 Klart! Git-status nu:${RESET}"
 git status
 echo
