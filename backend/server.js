@@ -12,7 +12,6 @@ app.use(cors());
 // Admin API
 // =========================
 
-// Hämta alla rum med grupper och checkpoints
 app.get('/api/admin/rooms', async (req, res) => {
   try {
     const [rooms] = await db.query('SELECT * FROM rooms ORDER BY id');
@@ -37,7 +36,6 @@ app.get('/api/admin/rooms', async (req, res) => {
   }
 });
 
-// ===== Rum =====
 app.post('/api/admin/room', async (req, res) => {
   const { name } = req.body;
   const [result] = await db.query('INSERT INTO rooms (name) VALUES (?)', [name]);
@@ -55,7 +53,6 @@ app.delete('/api/admin/room/:id', async (req, res) => {
   res.json({ success: true });
 });
 
-// ===== Grupp =====
 app.post('/api/admin/group', async (req, res) => {
   const { room_id, name } = req.body;
   const [result] = await db.query(
@@ -76,14 +73,27 @@ app.delete('/api/admin/group/:id', async (req, res) => {
   res.json({ success: true });
 });
 
-// ===== Checkpoint =====
 app.post('/api/admin/checkpoint', async (req, res) => {
   const { group_id, name } = req.body;
-  const [result] = await db.query(
-    'INSERT INTO checkpoints (group_id, name, position) VALUES (?, ?, 0)',
-    [group_id, name]
-  );
-  res.json({ id: result.insertId });
+
+  try {
+    const [[row]] = await db.query(
+      'SELECT COALESCE(MAX(position), -1) AS maxPos FROM checkpoints WHERE group_id = ?',
+      [group_id]
+    );
+
+    const nextPosition = row.maxPos + 1;
+
+    const [result] = await db.query(
+      'INSERT INTO checkpoints (group_id, name, position) VALUES (?, ?, ?)',
+      [group_id, name, nextPosition]
+    );
+
+    res.json({ id: result.insertId });
+  } catch (err) {
+    console.error(err);
+    res.status(500).json({ error: 'Kunde inte skapa checkpoint' });
+  }
 });
 
 app.put('/api/admin/checkpoint/:id', async (req, res) => {
@@ -97,7 +107,6 @@ app.delete('/api/admin/checkpoint/:id', async (req, res) => {
   res.json({ success: true });
 });
 
-// Flytta checkpoint (drag & drop)
 app.put('/api/admin/checkpoint/:id/move', async (req, res) => {
   const { group_id, position } = req.body;
   await db.query('UPDATE checkpoints SET group_id = ?, position = ? WHERE id = ?', [
@@ -220,26 +229,67 @@ app.get('/api/report/:round_id', async (req, res) => {
     res.setHeader('Content-Type', 'application/pdf');
     doc.pipe(res);
 
-    doc.fontSize(20).text('Egenkontrollrapport', { align: 'center' });
+    const imgWidth = 100;
+    doc.image('img/header/visitlogo.png', doc.page.margins.left, doc.page.margins.top, { width: imgWidth });
+
+    const date = new Date(round.created_at);
+    const formattedDate = date.toISOString().split('T')[0];
+
+    doc.fontSize(20).text('Salskollen - rapport', { align: 'center' });
     if (round.name) doc.fontSize(14).text(`Runda: ${round.name}`, { align: 'center' });
-    doc.fontSize(12).text(`Datum: ${new Date(round.created_at).toLocaleString()}`, { align: 'center' });
+    doc.fontSize(12).text(`Datum: ${formattedDate}`, { align: 'center' });
     doc.moveDown();
 
     let currentRoom = '', currentGroup = '';
-    checks.forEach(item => {
-      if (item.room !== currentRoom) {
-        currentRoom = item.room;
-        doc.fontSize(16).fillColor('black').text(`\n${currentRoom}`, { underline: true });
-        currentGroup = '';
+
+    PDFDocument.prototype.addPageIfNeeded = function() {
+      if (this.y > this.page.height - 100) {
+        this.addPage();
       }
-      if (item.groupName !== currentGroup) {
-        currentGroup = item.groupName;
-        doc.fontSize(14).fillColor('black').text(`\n  ${currentGroup}`);
-      }
-      const statusColor = item.status === 'ok' ? 'green' : 'red';
-      doc.fillColor(statusColor).text(`    - ${item.checkpoint}: ${item.status.toUpperCase()}`);
-      if (item.reason) doc.fillColor('black').text(`      Orsak: ${item.reason}`);
-    });
+    };
+
+    const writeChecks = (checkList, useColor = true) => {
+      checkList.forEach(item => {
+        if (item.room !== currentRoom) {
+          currentRoom = item.room;
+          doc.addPageIfNeeded();
+          doc.font('Helvetica-Bold').fontSize(16).fillColor('black').text(`\n${currentRoom}`, { underline: true });
+          currentGroup = '';
+        }
+
+        if (item.groupName !== currentGroup) {
+          currentGroup = item.groupName;
+          doc.font('Helvetica-Bold').fontSize(14).fillColor('black').text(`\n  ${currentGroup}`);
+        }
+
+        doc.font('Helvetica').fontSize(12);
+        if (useColor) {
+          const isOk = item.status === 'ok';
+          const statusText = isOk ? 'Godkänd' : 'Ej godkänd';
+          doc.fillColor(isOk ? 'green' : 'red').text(`    - ${item.checkpoint}: ${statusText}`);
+        } else {
+          doc.fillColor('black').text(`    - ${item.checkpoint}: Ej godkänd`);
+        }
+
+        if (item.reason) doc.fillColor('black').text(`      Kommentar: ${item.reason}`);
+        if (doc.y > doc.page.height - 100) {
+          doc.addPage();
+        }
+      });
+    };
+
+    writeChecks(checks, true);
+
+    const failedChecks = checks.filter(c => c.status !== 'ok');
+    if (failedChecks.length > 0) {
+      doc.addPage();
+      doc.font('Helvetica-Bold').fontSize(18).fillColor('black').text('Ej godkända punkter', { align: 'center' });
+      doc.moveDown();
+
+      currentRoom = '';
+      currentGroup = '';
+      writeChecks(failedChecks, false);
+    }
 
     doc.end();
   } catch (err) {
