@@ -1,6 +1,7 @@
 #!/bin/bash
 
 UNDERLINE="\e[4m"
+GREEN="\e[0;32m"
 YELLOW="\e[0;33m"
 RESET="\e[0m"
 
@@ -62,6 +63,6 @@ fi
 echo "------------------------------"
 echo
 
-echo "🎉 Klart! Git-status nu:"
+echo -e "${GREEN}🎉 Klart! Git-status nu:${RESET}"
 git status
 echo
