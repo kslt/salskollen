@@ -56,3 +56,4 @@ echo
 
 echo "🎉 Klart! Git-status nu:"
 git status
+echo
