@@ -25,20 +25,20 @@ export default function RoundSelector({ onRoundSelect }) {
       .then(data => {
         fetchRounds();
         setNewRoundName('');
-        onRoundSelect(data.id); // välj direkt
+        onRoundSelect(data.id);
       });
   };
 
   return (
     <div className="mb-6 flex items-center space-x-2">
       <select onChange={e => onRoundSelect(e.target.value)} className="border px-2 py-1 rounded flex-1">
-        <option value="">Välj runda</option>
+        <option value="">Välj en tidigare runda eller skapa en ny</option>
         {rounds.map(r => (
           <option key={r.id} value={r.id}>{r.name || r.created_at}</option>
         ))}
       </select>
       <input
-        placeholder="Ny runda"
+        placeholder="Ange rundans namn, tex datum eller salsnamn"
         value={newRoundName}
         onChange={e => setNewRoundName(e.target.value)}
         className="border px-2 py-1 rounded flex-1"

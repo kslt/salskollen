@@ -118,6 +118,35 @@ app.put('/api/admin/checkpoint/:id/move', async (req, res) => {
 });
 
 // =========================
+// ADMIN – RUNDOR
+// =========================
+app.get('/api/admin/rounds', async (req, res) => {
+  try {
+    const [rounds] = await db.query(
+      'SELECT id, name, created_at FROM rounds ORDER BY created_at DESC'
+    );
+    res.json(rounds);
+  } catch (err) {
+    console.error(err);
+    res.status(500).json({ error: 'Kunde inte hämta rundor' });
+  }
+});
+
+app.delete('/api/admin/round/:id', async (req, res) => {
+  const roundId = req.params.id;
+
+  try {
+    await db.query('DELETE FROM checks WHERE round_id = ?', [roundId]);
+    await db.query('DELETE FROM rounds WHERE id = ?', [roundId]);
+
+    res.json({ success: true });
+  } catch (err) {
+    console.error(err);
+    res.status(500).json({ error: 'Kunde inte ta bort runda' });
+  }
+});
+
+// =========================
 // RUM / CHECKPOINTS
 // =========================
 app.get('/api/rooms', async (req, res) => {
@@ -210,6 +239,13 @@ app.get('/api/checks', async (req, res) => {
 // =========================
 // PDF
 // =========================
+function stripEmojis(text = '') {
+  return text.replace(
+    /[\p{Emoji_Presentation}\p{Extended_Pictographic}]/gu,
+    ''
+  ).trim();
+}
+
 app.get('/api/report/:round_id', async (req, res) => {
   const { round_id } = req.params;
   try {
@@ -253,20 +289,27 @@ app.get('/api/report/:round_id', async (req, res) => {
         if (item.room !== currentRoom) {
           currentRoom = item.room;
           doc.addPageIfNeeded();
-          doc.font('Helvetica-Bold').fontSize(16).fillColor('black').text(`\n${currentRoom}`, { underline: true });
+          doc.font('Helvetica-Bold')
+            .fontSize(16)
+            .fillColor('black')
+            .text(`\n${stripEmojis(currentRoom)}`, { underline: true });
           currentGroup = '';
         }
 
         if (item.groupName !== currentGroup) {
           currentGroup = item.groupName;
-          doc.font('Helvetica-Bold').fontSize(14).fillColor('black').text(`\n  ${currentGroup}`);
+          doc.font('Helvetica-Bold')
+            .fontSize(14)
+            .fillColor('black')
+            .text(`\n  ${stripEmojis(currentGroup)}`);
         }
 
         doc.font('Helvetica').fontSize(12);
         if (useColor) {
           const isOk = item.status === 'ok';
           const statusText = isOk ? 'Godkänd' : 'Ej godkänd';
-          doc.fillColor(isOk ? 'green' : 'red').text(`    - ${item.checkpoint}: ${statusText}`);
+          doc.fillColor(isOk ? 'green' : 'red')
+            .text(`    - ${stripEmojis(item.checkpoint)}: ${statusText}`);
         } else {
           doc.fillColor('black').text(`    - ${item.checkpoint}: Ej godkänd`);
         }
