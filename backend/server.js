@@ -205,11 +205,28 @@ app.get('/api/rounds', async (req, res) => {
 // =========================
 app.post('/api/checks', async (req, res) => {
   const { checkpoint_id, status, reason, round_id } = req.body;
+
   try {
-    await db.query(
-      'INSERT INTO checks (checkpoint_id, status, reason, created_at, round_id) VALUES (?, ?, ?, NOW(), ?)',
-      [checkpoint_id, status, reason || null, round_id]
+    // finns det redan en check?
+    const [[existing]] = await db.query(
+      'SELECT id FROM checks WHERE checkpoint_id = ? AND round_id = ?',
+      [checkpoint_id, round_id]
     );
+
+    if (existing) {
+      // uppdatera
+      await db.query(
+        'UPDATE checks SET status = ?, reason = ?, created_at = NOW() WHERE id = ?',
+        [status, reason || null, existing.id]
+      );
+    } else {
+      // skapa ny
+      await db.query(
+        'INSERT INTO checks (checkpoint_id, status, reason, created_at, round_id) VALUES (?, ?, ?, NOW(), ?)',
+        [checkpoint_id, status, reason || null, round_id]
+      );
+    }
+
     res.json({ success: true });
   } catch (err) {
     console.error(err);
@@ -271,7 +288,7 @@ app.get('/api/report/:round_id', async (req, res) => {
     const date = new Date(round.created_at);
     const formattedDate = date.toISOString().split('T')[0];
 
-    doc.fontSize(20).text('Salskollen - rapport', { align: 'center' });
+    doc.fontSize(20).text('Salskollen - Rapport', { align: 'center' });
     if (round.name) doc.fontSize(14).text(`Runda: ${round.name}`, { align: 'center' });
     doc.fontSize(12).text(`Datum: ${formattedDate}`, { align: 'center' });
     doc.moveDown();
@@ -305,13 +322,27 @@ app.get('/api/report/:round_id', async (req, res) => {
         }
 
         doc.font('Helvetica').fontSize(12);
+
         if (useColor) {
-          const isOk = item.status === 'ok';
-          const statusText = isOk ? 'Godkänd' : 'Ej godkänd';
-          doc.fillColor(isOk ? 'green' : 'red')
-            .text(`    - ${stripEmojis(item.checkpoint)}: ${statusText}`);
+          if (item.status === 'ok') {
+            doc.fillColor('black')
+              .text(`    - ${stripEmojis(item.checkpoint)}: `, { continued: true });
+            doc.fillColor('green')
+              .text('Godkänd');
+          } else if (item.status === 'fail') {
+            doc.fillColor('black')
+              .text(`    - ${stripEmojis(item.checkpoint)}: `, { continued: true });
+            doc.fillColor('red')
+              .text('Ej godkänt');
+          } else if (item.status === 'ej') {
+            doc.fillColor('black')
+              .text(`    - ${stripEmojis(item.checkpoint)}: `, { continued: true });
+            doc.fillColor('orange')
+              .text('Ej aktuellt');
+          }
         } else {
-          doc.fillColor('black').text(`    - ${item.checkpoint}: Ej godkänd`);
+          doc.fillColor('black')
+            .text(`    - ${stripEmojis(item.checkpoint)}: Ej godkänd`);
         }
 
         if (item.reason) doc.fillColor('black').text(`      Kommentar: ${item.reason}`);
@@ -323,7 +354,9 @@ app.get('/api/report/:round_id', async (req, res) => {
 
     writeChecks(checks, true);
 
-    const failedChecks = checks.filter(c => c.status !== 'ok');
+    const failedChecks = checks.filter(
+    c => c.status !== 'ok' && c.status !== 'ej'
+    );
     if (failedChecks.length > 0) {
       doc.addPage();
       doc.font('Helvetica-Bold').fontSize(18).fillColor('black').text('Ej godkända punkter', { align: 'center' });

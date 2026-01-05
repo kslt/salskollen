@@ -43,6 +43,10 @@ export default function Room({ room, roundId }) {
                 onClick={() => updateCheck(cp.id, 'ok', checks[cp.id]?.reason||'')}
               >✔</button>
               <button
+                className={`px-2 py-1 mr-2 rounded ${checks[cp.id]?.status==='ej'?'bg-yellow-400':'bg-gray-300'}`}
+                onClick={() => updateCheck(cp.id, 'ej', checks[cp.id]?.reason||'')}
+              >- Ej aktuellt</button>
+              <button
                 className={`px-2 py-1 rounded ${checks[cp.id]?.status==='fail'?'bg-red-600':'bg-gray-300'}`}
                 onClick={() => {
                   const reason = prompt('Ange orsak:') || '';
