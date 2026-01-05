@@ -1,3 +1,4 @@
+import './style.css';
 import React, { useState, useEffect } from 'react';
 import { DragDropContext, Droppable, Draggable } from 'react-beautiful-dnd';
 
@@ -129,9 +130,9 @@ export default function AdminPanel({ onClose }) {
   };
 
   return (
-    <div className="p-6 bg-gray-100 min-h-screen">
-      <div className="flex justify-between items-center mb-6">
-        <h1 className="text-3xl font-bold text-gray-800">Admin Panel</h1>
+    <div className="admin-panel-container">
+      <div className="admin-panel-header">
+        <h1 className="admin-panel-title">Admin Panel</h1>
         <div className="flex gap-2 mb-6">
           <button
             onClick={() => setActiveView('structure')}
@@ -157,7 +158,7 @@ export default function AdminPanel({ onClose }) {
         </div>
         <button
           onClick={onClose}
-          className="bg-gray-600 text-white px-3 py-1 rounded hover:bg-gray-700"
+          className="btn btn-secondary"
         >
           Stäng
         </button>
